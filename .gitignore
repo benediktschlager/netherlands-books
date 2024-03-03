@@ -1,0 +1,4 @@
+# React pnpm Remix .gitignore
+node_modules
+.pnp
+pics
