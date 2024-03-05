@@ -21,7 +21,12 @@ type Book = {
 
 
 const books = [
-
+"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1265401884i/9717.jpg",
+"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1348332977i/97642.jpg",
+"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1694722764i/1303.jpg",
+"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1327947323i/56627.jpg",
+"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1375568311i/12633800.jpg",
+"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1642986312i/58988425.jpg"
 ]
 
 
