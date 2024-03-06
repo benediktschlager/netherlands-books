@@ -1,4 +1,5 @@
 import * as Form from "@radix-ui/react-form";
+import { DownloadIcon } from "@radix-ui/react-icons";
 import { Dialog } from "@radix-ui/themes";
 import { ActionFunctionArgs, json, LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import { useActionData, useLoaderData } from "@remix-run/react";
@@ -138,10 +139,15 @@ function BookInsertionForm() {
 const bookDetailsContext = React.createContext<{ book: Book } | null>(null);
 function Book ({ book, onClick }: { book: Book, onClick: () => void }) {
 		return (
+								<div className="flex flex-row gap-2">
 				<div className="flex items-center flex-col"  onClick={onClick}>
 						<h3>{book.title}</h3>
 						<img className="max-w-24" src={book.image} alt={book.title} />
+								</div>
+								<div className="flex flex-col gap-2 flex-col p-2">
+										<button><DownloadIcon/></button>
 				</div>
+								</div>
 		)
 
 }
@@ -155,6 +161,7 @@ export function BookDetails() {
 						<div className="flex flex-col gap-2">
 								<h1>{bookDetails.book.title}</h1>
 								<img className="max-w-24" src={bookDetails.book.image} alt={bookDetails.book.title} />
+
 						</div>
 
 )
