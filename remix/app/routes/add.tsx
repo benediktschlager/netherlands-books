@@ -16,12 +16,24 @@ export const meta: MetaFunction = () => {
 
 
 export async function loader({request }: LoaderFunctionArgs) {
-		//const supabase = createClient(request);
 		//const {data: recentBooks } = await supabase.from('books').select('*').limit(10)
 		//
 		//
 		//return json({ recentBooks });
 		return null;
+}
+
+
+function isValidHttpsUrl(url: string): boolean {
+  const httpsUrlPattern = /^https:\/\/.+/;
+  return httpsUrlPattern.test(url);
+}
+
+
+function s(formData, x) {
+
+		const v = formData.get(x);
+		return v ? String(v) : null;
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -30,19 +42,57 @@ export async function action({ request }: ActionFunctionArgs) {
   const author = String(formData.get("author"));
   const presenter = String(formData.get("presenter"));
   const description = String(formData.get("description"));
+  const buylink =  s(formData, "buylink");
 
   // Server-side validation for the title field
   if (!title) {
     return json({ field: 'error', error: "Title is required." } as const, { status: 400 });
   }
+		if (!author) {
+    return json({ field: 'error', error: "Author is required." } as const, { status: 400 });
+  }
+		if (!presenter) {
+    return json({ field: 'error', error: "Presenter is required." } as const, { status: 400 });
+  }
+		if (!description) {
+    return json({ field: 'error', error: "Description is required." } as const, { status: 400 });
+  }
+		if (buylink && buylink.length > 0 && !isValidHttpsUrl(buylink))  {
+    return json({ field: 'error', error: `Purchase link looks invalid. ${buylink}` } as const, { status: 400 });
+  }
+
+
+
+		if (Math.max(title.length, author.length, presenter.length, description.length) > 100) {
+				return json({ field: 'error' } as const, { status: 400 });
+		}
+
 
 	console.log('sever side validation', title, author, presenter, description);
 
   // Here, you would typically handle the insertion logic,
+		//
+
   // such as saving the book data to a database.
 
   // For demonstration, let's pretend we insert and then redirect to a success page (or you can customize as needed)
   // return redirect('/success-page');
+	const supabase = createClient(request);
+
+  await supabase.from('books').insert({
+						title: title,
+				author: author,
+				presenter: presenter,
+				description: description,
+				/* 
+				genre: genre,
+		
+
+				*/
+		
+				
+
+				});
 
   // For now, let's just return the submitted data as JSON.
   return json({ field: 'okay', title, author, presenter, description } as const);

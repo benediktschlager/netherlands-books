@@ -22,22 +22,11 @@ type Book = {
 };
 
 
-const books = [
-"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1265401884i/9717.jpg",
-"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1348332977i/97642.jpg",
-"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1694722764i/1303.jpg",
-"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1327947323i/56627.jpg",
-"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1375568311i/12633800.jpg",
-"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1642986312i/58988425.jpg"
-]
-
-
 export async function loader({request }: LoaderFunctionArgs) {
-		//const supabase = createClient(request);
-		//const {data: recentBooks } = await supabase.from('books').select('*').limit(10)
+		const supabase = createClient(request);
+		const {data: recentBooks } = await supabase.from('books').select('*').limit(10)
 		//
-		//
-		//return json({ recentBooks });
+		return json({ recentBooks });
 		return json(
 				{
 						recentBooks: books.map((book, index) => ({
@@ -134,7 +123,6 @@ export function RecentBooks({	books, onClick }: { books: Book[], onClick: (book:
 export default function Index() {
  const { recentBooks } = useLoaderData<typeof loader>();
 const [book, setBook] = useState<Book | null>(null);
-
   return (
 	  <bookDetailsContext.Provider value={{ book, close: () => setBook(null) }}>
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
