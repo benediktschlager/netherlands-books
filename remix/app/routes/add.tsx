@@ -30,10 +30,14 @@ function isValidHttpsUrl(url: string): boolean {
 }
 
 
-function s(formData, x) {
-
+function s(formData, x, { maxLength=1024}: {maxLength: number}) {
 		const v = formData.get(x);
-		return v ? String(v) : null;
+		const result = v ? String(v) : null;
+		if (!result) { return null; }
+		if (maxLength  < result.length) {
+				return null;
+		}
+		return result;
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -42,7 +46,8 @@ export async function action({ request }: ActionFunctionArgs) {
   const author = String(formData.get("author"));
   const presenter = String(formData.get("presenter"));
   const description = String(formData.get("description"));
-  const buylink =  s(formData, "buylink");
+  const buylink =  s(formData, "buylink", {maxLength: 1024});
+  const genre =  s(formData, "genre", {maxLength: 30} );
 
   // Server-side validation for the title field
   if (!title) {
@@ -57,6 +62,11 @@ export async function action({ request }: ActionFunctionArgs) {
 		if (!description) {
     return json({ field: 'error', error: "Description is required." } as const, { status: 400 });
   }
+if (!genre) {
+    return json({ field: 'error', error: "Genre is required or too long." } as const, { status: 400 });
+  }
+				
+
 		if (buylink && buylink.length > 0 && !isValidHttpsUrl(buylink))  {
     return json({ field: 'error', error: `Purchase link looks invalid. ${buylink}` } as const, { status: 400 });
   }
@@ -67,8 +77,6 @@ export async function action({ request }: ActionFunctionArgs) {
 				return json({ field: 'error' } as const, { status: 400 });
 		}
 
-
-	console.log('sever side validation', title, author, presenter, description);
 
   // Here, you would typically handle the insertion logic,
 		//
@@ -84,8 +92,9 @@ export async function action({ request }: ActionFunctionArgs) {
 				author: author,
 				presenter: presenter,
 				description: description,
-				/* 
 				genre: genre,
+				buylink: buylink
+				/* 
 		
 
 				*/

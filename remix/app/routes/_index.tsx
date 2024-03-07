@@ -1,8 +1,7 @@
-import * as Form from "@radix-ui/react-form";
 import { DownloadIcon, ExitFullScreenIcon, ExitIcon } from "@radix-ui/react-icons";
 import { Dialog } from "@radix-ui/themes";
 import { ActionFunctionArgs, json, LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
-import { useActionData, useLoaderData } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import React, { useState } from "react";
 import { useContext } from "react";
 import { createClient } from "~/utils/supabase.server";
@@ -37,32 +36,6 @@ export async function loader({request }: LoaderFunctionArgs) {
 				}
 		);
 }
-
-export async function action({ request }: ActionFunctionArgs) {
-  const formData = await request.formData();
-  const title = String(formData.get("title"));
-  const author = String(formData.get("author"));
-  const presenter = String(formData.get("presenter"));
-  const description = String(formData.get("description"));
-
-  // Server-side validation for the title field
-  if (!title) {
-    return json({ field: 'error', error: "Title is required." } as const, { status: 400 });
-  }
-
-	console.log('sever side validation', title, author, presenter, description);
-
-  // Here, you would typically handle the insertion logic,
-  // such as saving the book data to a database.
-
-  // For demonstration, let's pretend we insert and then redirect to a success page (or you can customize as needed)
-  // return redirect('/success-page');
-
-  // For now, let's just return the submitted data as JSON.
-  return json({ field: 'okay', title, author, presenter, description } as const);
-}
-
-
 
 
 const bookDetailsContext = React.createContext<{ book: Book, close: () => void } | null>(null);
@@ -124,7 +97,7 @@ export default function Index() {
  const { recentBooks } = useLoaderData<typeof loader>();
 const [book, setBook] = useState<Book | null>(null);
   return (
-	  <bookDetailsContext.Provider value={{ book, close: () => setBook(null) }}>
+	  <bookDetailsContext.Provider value={book && { book, close: () => setBook(null) }}>
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
 				<BookDetails />
 				<RecentBooks books={recentBooks} onClick={b => setBook(b)}/>
