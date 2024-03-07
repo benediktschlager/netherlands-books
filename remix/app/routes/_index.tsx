@@ -1,5 +1,5 @@
 import * as Form from "@radix-ui/react-form";
-import { DownloadIcon } from "@radix-ui/react-icons";
+import { DownloadIcon, ExitFullScreenIcon, ExitIcon } from "@radix-ui/react-icons";
 import { Dialog } from "@radix-ui/themes";
 import { ActionFunctionArgs, json, LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import { useActionData, useLoaderData } from "@remix-run/react";
@@ -17,6 +17,7 @@ type Book = {
   id: string;
   title: string;
 	image: string;
+  buylink?: string;
 
 };
 
@@ -74,78 +75,25 @@ export async function action({ request }: ActionFunctionArgs) {
 
 
 
-function BookInsertionForm() {
-  const actionData = useActionData<typeof action>();
 
-	const inputFieldClassNames = "box-border w-full bg-blackA2 shadow-blackA6 inline-flex h-[35px] appearance-none items-center justify-center rounded-[4px] px-[10px] text-[15px] leading-none shadow-[0_0_0_1px] outline-none hover:shadow-[0_0_0_1px_black] focus:shadow-[0_0_0_2px_black] selection:color-white selection:bg-blackA6";
-
-  return (
-    <div className="flex gap-2 flex-col">
-      <h1>Add a New Book</h1>
-			<Form.Root className="flex flex-col gap-2 w-[260px] outline p-3" method="post">
-				<Form.Field name="title">
-						<Form.Label>Title</Form.Label>
-						<Form.Control required className={inputFieldClassNames} />
-				</Form.Field>
-				<Form.Field name="author">
-						<Form.Label>Author</Form.Label>
-						<Form.Control required  className={inputFieldClassNames} />
-				</Form.Field>
-				<Form.Field name="presenter">
-						<Form.Label>Presenter</Form.Label>
-						<Form.Control required  className={inputFieldClassNames} />
-				</Form.Field>
-				<Form.Field name="description">
-						<Form.Label>Description</Form.Label>
-						<Form.Control required  className={inputFieldClassNames} />
-				</Form.Field>
-				<Form.Field name="genre">
-						<Form.Label>Genre</Form.Label>
-						<Form.Control required  className={inputFieldClassNames} />
-				</Form.Field>
-				<Form.Field name="isbn">
-						<Form.Label>ISBN</Form.Label>
-						<Form.Control  className={inputFieldClassNames} />
-				</Form.Field>
-
-				<Form.Field name="cover">
-						<Form.Label>Cover</Form.Label>
-						<Form.Control  className={inputFieldClassNames} />
-				</Form.Field>
-
-				<Form.Field name="tags">
-				<Form.Label>Tags</Form.Label>
-				<Form.Control  className={inputFieldClassNames} />
-				</Form.Field>
-				<Form.Submit asChild>
-						 <input type="submit" value="Add" className="box-border w-full text-violet11 shadow-blackA4 hover:bg-mauve3 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] font-medium leading-none shadow-[0_2px_10px] focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none mt-[10px]" />
-				</Form.Submit>
-		 </Form.Root>
-      {actionData?.field === 'error' && <p style={{ color: "red" }}>{actionData.error}</p>}
-      {actionData && actionData.field === 'okay' && (
-        <div>
-          <h2>Book Submitted</h2>
-          <p>Title: {actionData.title}</p>
-          <p>Author: {actionData.author}</p>
-          <p>Presenter: {actionData.presenter}</p>
-          <p>Description: {actionData.description}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
-const bookDetailsContext = React.createContext<{ book: Book } | null>(null);
+const bookDetailsContext = React.createContext<{ book: Book, close: () => void } | null>(null);
 function Book ({ book, onClick }: { book: Book, onClick: () => void }) {
+
+		const download = (e: React.MouseEvent) => {
+				e.preventDefault();
+				console.log('download', book.title);
+				// open book.buylink in new tab
+				window.open(book.buylink, '_blank');
+		}
+
 		return (
 								<div className="flex flex-row gap-2">
-				<div className="flex items-center flex-col"  onClick={onClick}>
-						<h3>{book.title}</h3>
-						<img className="max-w-24" src={book.image} alt={book.title} />
+				<div className="flex items-center flex-col">
+						<a onClick={onClick}><h3>{book.title}</h3></a>
+						<button onClick={onClick}> <img className="max-w-24" src={book.image} alt={book.title} /></button>
 								</div>
 								<div className="flex flex-col gap-2 flex-col p-2">
-										<button><DownloadIcon/></button>
+										{book.buylink && <button onClick={download}><DownloadIcon/></button>}
 				</div>
 								</div>
 		)
@@ -156,14 +104,16 @@ function Book ({ book, onClick }: { book: Book, onClick: () => void }) {
 
 export function BookDetails() {
 		const bookDetails = useContext(bookDetailsContext) ;
-		if (!bookDetails) return null;
+		if (!bookDetails || !bookDetails.book) return null;
 		return (
-						<div className="flex flex-col gap-2">
-								<h1>{bookDetails.book.title}</h1>
-								<img className="max-w-24" src={bookDetails.book.image} alt={bookDetails.book.title} />
-
+				<Dialog.Root defaultOpen>
+						<Dialog.Content className="fixed inset-0 flex items-center justify-center p-4 w-[100%] h-[100%] bg-black bg-opacity-50" onClick={() => bookDetails.close()}>
+						<div className="flex flex-col gap-2 bg-blackA2  outline p-3 items-center justify-center" onClick={(e) => e.stopPropagation()}>
+								<div className="flex flex-row items-center justify-center w-64"><h1>{bookDetails.book.title}</h1><button onClick={() => bookDetails.close()}><ExitIcon /></button> </div>
+								<img className="max-w-64" src={bookDetails.book.image} alt={bookDetails.book.title} />
 						</div>
-
+						</Dialog.Content>
+				</Dialog.Root>
 )
 }
 
@@ -183,13 +133,12 @@ export function RecentBooks({	books, onClick }: { books: Book[], onClick: (book:
 
 export default function Index() {
  const { recentBooks } = useLoaderData<typeof loader>();
-const [book, setBook] = useState(recentBooks[0]);
+const [book, setBook] = useState<Book | null>(null);
 
   return (
-	  <bookDetailsContext.Provider value={{ book }}>
+	  <bookDetailsContext.Provider value={{ book, close: () => setBook(null) }}>
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
 				<BookDetails />
-				<BookInsertionForm />
 				<RecentBooks books={recentBooks} onClick={b => setBook(b)}/>
     </div>
 		</bookDetailsContext.Provider>
