@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.529.0",
+    "@google-cloud/recaptcha-enterprise": "^5.4.0",
+    "@radix-ui/colors": "^3.0.0",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-direction": "^1.0.1",
     "@radix-ui/react-form": "^0.0.3",
@@ -25,26 +27,32 @@
     "@remix-run/serve": "^2.8.0",
     "@supabase/ssr": "^0.1.0",
     "@supabase/supabase-js": "^2.39.7",
+    "@types/formidable": "^3.4.5",
+    "@types/pg": "^8.11.2",
     "isbot": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "sharp": "^0.33.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.8.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
-    "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.7.4",
     "classnames": "^2.5.1",
-    "eslint": "^8.38.0",
+    "eslint": "^8.57.0",
+    "eslint-config-standard-with-typescript": "^43.0.1",
     "eslint-import-resolver-typescript": "^3.6.1",
-    "eslint-plugin-import": "^2.28.1",
+    "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsx-a11y": "^6.7.1",
-    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-n": "^15.0.0 || ^16.0.0 ",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-react": "^7.34.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5.1.6"
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18.0.0"

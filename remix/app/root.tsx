@@ -22,6 +22,7 @@ export default function App() {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="https://www.google.com/recaptcha/enterprise.js?render=6Lda05MpAAAAACIqI_Oz46WvRl6JWvKHLFmTQcRi"></script>
         <Meta />
         <Links />
       </head>
