@@ -1,5 +1,5 @@
 import * as Form from "@radix-ui/react-form";
-import {ActionFunctionArgs, json, unstable_composeUploadHandlers, type MetaFunction, unstable_parseMultipartFormData} from "@remix-run/node";
+import {ActionFunctionArgs, json, unstable_composeUploadHandlers, type MetaFunction, unstable_parseMultipartFormData, UploadHandler} from "@remix-run/node";
 import {useActionData} from "@remix-run/react";
 import {createClient} from "~/utils/supabase.server";
 import fs from 'fs/promises';
@@ -66,14 +66,30 @@ async function uploadImage(data: AsyncIterable<Uint8Array>, contentType: string)
         }
         return null;
     }
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
    const { small, medium } = await createImagePreviews(fileName);
     return fileName;
 }
 
 
 export async function action({request}: ActionFunctionArgs) {
-    const uploadHandler = unstable_composeUploadHandlers(
+    const decoder = new TextDecoder();
+    const uploadHandler: UploadHandler = 
         async ({ name, contentType, data, filename }) => {
+            if (contentType === undefined) {
+                const intermediateResult = [];
+                for await (const chunk of data) {
+                    intermediateResult.push(chunk);
+                }
+                const bytes = new Uint8Array(intermediateResult.reduce((acc, chunk) => acc + chunk.length, 0));
+                for (let i = 0, offset = 0; i < intermediateResult.length; i++) {
+                    bytes.set(intermediateResult[i], offset);
+                    offset += intermediateResult[i].length;
+                }
+                const s =  decoder.decode(bytes);
+                console.log(`Received string data: ${s}`);
+                return s;
+            }
             console.log(`Received file: ${name} (${contentType})`);
             if (name !== "cover" || !filename || !contentType.startsWith("image/")) {
                 return undefined;
@@ -81,22 +97,19 @@ export async function action({request}: ActionFunctionArgs) {
     
             const uploadImageResult = await uploadImage(data, contentType);
             return uploadImageResult;
-        }
-    );
+        };
 
     const formData = await unstable_parseMultipartFormData(request, uploadHandler);
+    console.log(`Received form data: ${JSON.stringify(Object.fromEntries(formData))}`);
 
-    const title = String(formData.get("title"));
-    const author = String(formData.get("author"));
-    const presenter = String(formData.get("presenter"));
-    const description = String(formData.get("description"));
-    const coverImage = formData.get("cover");
-    if (!coverImage) {
-        return json({field: 'error', error: "Image is too big or invalid"} as const, {status: 400});
-    }
 
+    const title = s(formData, "title", { maxLength: 100});
+    const author = s(formData, "author", { maxLength: 100});
+    const presenter = s(formData, "presenter", { maxLength: 100});
+    const description = s(formData, "description", { maxLength: 100} );
     const buylink = s(formData, "buylink", {maxLength: 1024});
     const genre = s(formData, "genre", {maxLength: 30});
+
 
     // Server-side validation for the title field
     if (!title) {
@@ -112,7 +125,12 @@ export async function action({request}: ActionFunctionArgs) {
         return json({field: 'error', error: "Description is required."} as const, {status: 400});
     }
     if (!genre) {
-        //return json({field: 'error', error: "Genre is required or too long."} as const, {status: 400});
+        return json({field: 'error', error: "Genre is required or too long."} as const, {status: 400});
+    }
+
+    const coverImage = formData.get("cover");
+    if (!coverImage) {
+        return json({field: 'error', error: "Image is too big or invalid"} as const, {status: 400});
     }
 
 
@@ -126,6 +144,8 @@ export async function action({request}: ActionFunctionArgs) {
 
     const supabase = createClient(request);
 
+
+    console.log(`Inserting book: ${title} by ${author} presented by ${presenter}`)
     await supabase.from('books').insert({
         title: title,
         author: author,
