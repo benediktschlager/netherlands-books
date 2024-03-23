@@ -10,8 +10,10 @@ export function getImagePath(fileName: string) {
 
 export async function createImagePreviews(fileName: string) {
     const fileEnding = "." +  fileName.split('.').pop();
-    const small = getImagePath(fileName.replace(fileEnding, "_120.webp"));
-    const medium = getImagePath(fileName.replace(fileEnding, "_400.webp"));
+    const rSmall = fileName.replace(fileEnding, "_120.webp");
+    const rMedium = fileName.replace(fileEnding, "_400.webp");
+    const small = getImagePath(rSmall);
+    const medium = getImagePath(rMedium);
 
     const f = await fs.readFile(getImagePath(fileName));
     const image = sharp(f);
@@ -23,5 +25,5 @@ export async function createImagePreviews(fileName: string) {
        image.resize(width, null).toFile(small);
     }
 
-    return { small, medium };
+    return { small: rSmall, medium: rMedium };
 }

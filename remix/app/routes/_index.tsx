@@ -4,6 +4,7 @@ import {json, LoaderFunctionArgs, type MetaFunction} from "@remix-run/node";
 import {useLoaderData} from "@remix-run/react";
 import React, {useContext, useState} from "react";
 import {createClient} from "~/utils/supabase.server";
+import { CoverImages } from "./add";
 
 export const meta: MetaFunction = () => {
     return [
@@ -11,10 +12,12 @@ export const meta: MetaFunction = () => {
         {name: "description", content: "Welcome to Remix!"},
     ];
 };
-type Book = {
+
+
+export type Book = {
     id: string;
     title: string;
-    image: string;
+    covers: CoverImages;
     buylink?: string;
 };
 
@@ -22,17 +25,11 @@ type Book = {
 export async function loader({request}: LoaderFunctionArgs) {
     const supabase = createClient(request);
     const {data: recentBooks} = await supabase.from('books').select('*').limit(10)
-    //
-    return json({recentBooks: recentBooks as Array<Book>});
-    /*		return json(
-                            {
-    recentBooks: books.map((book, index) => ({
-    id: String(index),
-    title: `Book ${index + 1}`,
-    image: book
-    } satisfies Book))
-    }
-    );*/
+    recentBooks?.forEach(b => {
+        b.covers = JSON.parse(b.covers);
+    })
+
+    return json({recentBooks: (recentBooks as Array<Book>)});
 }
 
 
@@ -51,7 +48,14 @@ function Book({book, onClick}: { book: Book, onClick: () => void }) {
         <div className="flex flex-row gap-2">
             <div className="flex items-center flex-col">
                 <a onClick={onClick}><h3>{book.title}</h3></a>
-                <button onClick={onClick}><img className="max-w-24" src={book.image} alt={book.title}/></button>
+                <button onClick={onClick}>
+                <picture>
+               <source srcSet={book.covers.small} media="(max-width: 600px)"/> 
+               <source srcSet={book.covers.medium} media="(max-width: 1200px)"/> 
+               { /* TODO should original ever be shown??? */ }
+                <img className="max-w-64" src={book.covers.original} alt={book.title}/>
+                </picture>
+                </button>
             </div>
             <div className="flex flex-col gap-2 flex-col p-2">
                 {book.buylink && <button onClick={download}><DownloadIcon/></button>}
@@ -75,7 +79,8 @@ export function BookDetails() {
                     <div className="flex flex-row items-center justify-between w-64"><h1>{bookDetails.book.title}</h1>
                         <button onClick={() => bookDetails.close()}><ExitIcon/></button>
                     </div>
-                    <img className="max-w-64" src={bookDetails.book.image} alt={bookDetails.book.title}/>
+                    { /* TODO support different formats e.g. jpg, avif */ }
+                    <img className="max-w-64" src={bookDetails.book.covers.medium} alt={bookDetails.book.title}/>
                 </div>
             </Dialog.Content>
         </Dialog.Root>
@@ -84,11 +89,11 @@ export function BookDetails() {
 
 export function RecentBooks({books, onClick}: { books: Book[], onClick: (book: Book) => void }) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {books.map((book) => (
                     <Book key={book.id} book={book} onClick={() => onClick(book)}/>
                 )
-            )};
+            )}
         </div>
 
 

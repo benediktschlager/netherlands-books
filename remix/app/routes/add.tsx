@@ -5,6 +5,7 @@ import {createClient} from "~/utils/supabase.server";
 import fs from 'fs/promises';
 
 import { createImagePreviews, getImagePath} from '~/.server/sharputils';
+import { type Book } from "./_index";
 
 export const meta: MetaFunction = () => {
     return [
@@ -34,6 +35,15 @@ function s(formData, x, {maxLength = 1024}: { maxLength: number }) {
 
 
 const ALLOWED_IMAGE_SIZE = 10 * 1024 * 1024; // 10MiB
+
+
+export type CoverImages = {
+    original: string,
+    /** 120px */
+    small: string,
+    /** 400px */
+    medium: string
+}
 
 async function uploadImage(data: AsyncIterable<Uint8Array>, contentType: string): Promise<string | null> {
     console.log(`Uploading image of type: ${contentType}`);
@@ -66,10 +76,11 @@ async function uploadImage(data: AsyncIterable<Uint8Array>, contentType: string)
         }
         return null;
     }
-   // eslint-disable-next-line @typescript-eslint/no-unused-vars
    const { small, medium } = await createImagePreviews(fileName);
-    return fileName;
+    return JSON.stringify({ original: "images/" + fileName, small: "images/" + small, medium: "images/" + medium} satisfies CoverImages );
 }
+
+const ALLOWED_STRING_SIZE = 1024; // 1KiB
 
 
 export async function action({request}: ActionFunctionArgs) {
@@ -78,10 +89,16 @@ export async function action({request}: ActionFunctionArgs) {
         async ({ name, contentType, data, filename }) => {
             if (contentType === undefined) {
                 const intermediateResult = [];
+                let length = 0;
                 for await (const chunk of data) {
                     intermediateResult.push(chunk);
+                    length += chunk.length;
+                    if (length > ALLOWED_STRING_SIZE) {
+                        console.error(`String too large, aborting`)
+                        return undefined;
+                    }
                 }
-                const bytes = new Uint8Array(intermediateResult.reduce((acc, chunk) => acc + chunk.length, 0));
+                const bytes = new Uint8Array(length);
                 for (let i = 0, offset = 0; i < intermediateResult.length; i++) {
                     bytes.set(intermediateResult[i], offset);
                     offset += intermediateResult[i].length;
@@ -128,8 +145,8 @@ export async function action({request}: ActionFunctionArgs) {
         return json({field: 'error', error: "Genre is required or too long."} as const, {status: 400});
     }
 
-    const coverImage = formData.get("cover");
-    if (!coverImage) {
+    const coversData =  formData.get("cover");
+    if (!coversData) {
         return json({field: 'error', error: "Image is too big or invalid"} as const, {status: 400});
     }
 
@@ -146,14 +163,21 @@ export async function action({request}: ActionFunctionArgs) {
 
 
     console.log(`Inserting book: ${title} by ${author} presented by ${presenter}`)
-    await supabase.from('books').insert({
+    const { error } = await supabase.from('books').insert({
         title: title,
         author: author,
         presenter: presenter,
         description: description,
         genre: genre,
-        buylink: buylink
-    });
+        buylink: buylink!,
+        covers: String(coversData) as unknown as CoverImages,
+        createdBy: "anonymous"
+    } satisfies Book);
+
+    if (error) {
+        console.error(`Error inserting book: ${error.message}`);
+        return json({field: 'error', error: "Error inserting book"} as const, {status: 500});
+    }
 
     // For now, let's just return the submitted data as JSON.
     return json({field: 'okay', title, author, presenter, description} as const);
@@ -195,7 +219,7 @@ function BookInsertionForm() {
                 </Form.Field>
                 <Form.Field name="cover">
                     <Form.Label>Cover</Form.Label>
-                    <Form.Control asChild>
+                    <Form.Control required asChild>
                         <input type="file" className={inputFieldClassNames}/>
                     </Form.Control>
                 </Form.Field>
