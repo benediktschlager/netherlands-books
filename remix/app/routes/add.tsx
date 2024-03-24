@@ -1,11 +1,14 @@
 import * as Form from "@radix-ui/react-form";
 import {ActionFunctionArgs, json, unstable_composeUploadHandlers, type MetaFunction, unstable_parseMultipartFormData, UploadHandler} from "@remix-run/node";
-import {useActionData} from "@remix-run/react";
+import {useActionData, useFetcher} from "@remix-run/react";
 import {createClient} from "~/utils/supabase.server";
 import fs from 'fs/promises';
-
+import { useZxing} from "react-zxing";
 import { createImagePreviews, getImagePath} from '~/.server/sharputils';
+import { getBookInfo, Book as IsbnSearchBook } from '~/.server/isbnutils';
 import { type Book } from "./_index";
+import { useEffect, useRef, useState } from "react";
+import { LoopIcon } from "@radix-ui/react-icons";
 
 export const meta: MetaFunction = () => {
     return [
@@ -18,6 +21,61 @@ export const meta: MetaFunction = () => {
 function isValidHttpsUrl(url: string): boolean {
     const httpsUrlPattern = /^https:\/\/.+/;
     return httpsUrlPattern.test(url);
+}
+
+
+function IsbnScanner({book} : {book?: IsbnSearchBook}) {
+    const [result, setResult] = useState("");
+    const [isSearching, setIsSearching] = useState(false);
+    const fetcher = useFetcher();
+
+    const searchRef = useRef<IsbnSearchBook>(undefined);
+    if (searchRef.current !== book) {
+        console.log(`New book to search for: ${book?.isbn}`);
+        searchRef.current = book;
+        setResult(book?.isbn);
+        setIsSearching(Boolean(book));
+    }
+
+    const checkIsbn = (isbn: string) => {
+        searchRef.current = undefined;
+        const formData = new FormData();
+        formData.append("isbn", isbn);
+        formData.append("_action", "GETBOOKBYISBN");
+        fetcher.submit(formData, { method: "post" });
+        setIsSearching(true);
+    };
+    const { ref } = useZxing({
+        onDecodeResult(result) {
+            setResult(result.getText());
+            checkIsbn(result.getText());
+        },
+    });
+
+
+    if (ref.current !== null) {
+        console.log(`Running scanner on video element: ${ref.current}`);
+        console.log(`Time ${ref.current.currentTime} ${ref.current.currentSrc} ${ref.current.paused} ${ref.current.ended}`);
+    }
+
+
+    // debug only
+    useEffect(() => {
+        setTimeout(() => {
+            setResult("9783442178582");
+            checkIsbn("9783442178582");
+        }, 1000)
+    }, []);
+
+
+    return (
+        <>
+            <video ref={ref} style={{width: "100%", height: "auto"}}/>
+            <p>Scanned ISBN: {result}</p>
+            <input type="hidden" name="isbn" value={result} />
+            {isSearching && <div className="flex flex-cols gap-2 justify-center"><LoopIcon /> <p>Searching...</p></div> }
+        </>
+    )
 }
 
 
@@ -84,6 +142,7 @@ const ALLOWED_STRING_SIZE = 1024; // 1KiB
 
 
 export async function action({request}: ActionFunctionArgs) {
+    // TODO rate limiting
     const decoder = new TextDecoder();
     const uploadHandler: UploadHandler = 
         async ({ name, contentType, data, filename }) => {
@@ -116,8 +175,25 @@ export async function action({request}: ActionFunctionArgs) {
             return uploadImageResult;
         };
 
+
+    if (request.headers.get("content-type")?.startsWith("multipart/form-data") !== true) {
+        const formData = await request.formData();
+    if (String(formData.get("_action")) === "GETBOOKBYISBN" ) {
+        const isbn = String(formData.get("isbn"));
+        console.log(`Searching for book with ISBN: ${isbn}`);
+        const bookInfo = await getBookInfo(isbn);
+        if (!bookInfo) {
+            return json({field: 'error', error: "Book not found"} as const, {status: 404})
+        }
+
+        return json({ field: 'book', book: bookInfo} as const);
+    }
+
+        return json({field: 'error', error: "Invalid request"} as const, {status: 400});
+    }
     const formData = await unstable_parseMultipartFormData(request, uploadHandler);
     console.log(`Received form data: ${JSON.stringify(Object.fromEntries(formData))}`);
+
 
 
     const title = s(formData, "title", { maxLength: 100});
@@ -203,6 +279,7 @@ function BookInsertionForm() {
         <div className="flex gap-2 flex-col w-[100%] items-center">
             <h1>Add a New Book</h1>
             <Form.Root className="flex flex-col gap-2 w-[260px] outline p-3" method="post" encType="multipart/form-data">
+            <input type="hidden" name="_action" value="ADDBOOK" />
                 <Form.Field name="title">
                     <Form.Label>Title</Form.Label>
                     <Form.Control required className={inputFieldClassNames}/>
@@ -231,12 +308,14 @@ function BookInsertionForm() {
                 </Form.Field>
                 <Form.Field name="isbn">
                     <Form.Label>ISBN</Form.Label>
-                    <Form.Control className={inputFieldClassNames}/>
+                    <Form.Control asChild className={inputFieldClassNames}>
+                        <IsbnScanner book={actionData?.field === 'book' ? actionData?.book : undefined  } />
+                    </Form.Control>
                 </Form.Field>
                 <Form.Field name="cover">
                     <Form.Label>Cover</Form.Label>
                     <Form.Control required asChild>
-                        <input type="file" accept="image/*" capture assName={inputFieldClassNames}/>
+                        <input type="file" accept="image/*" capture className={inputFieldClassNames}/>
                     </Form.Control>
                 </Form.Field>
                 <Form.Field name="tags">

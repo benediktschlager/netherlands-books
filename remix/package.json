@@ -30,8 +30,11 @@
     "@types/formidable": "^3.4.5",
     "@types/pg": "^8.11.2",
     "isbot": "^4.1.0",
+    "optional": "^0.1.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-media-devices": "^1.1.5",
+    "react-zxing": "^2.0.0",
     "sharp": "^0.33.3",
     "uuid": "^9.0.1"
   },
