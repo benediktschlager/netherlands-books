@@ -74,6 +74,7 @@ function IsbnScanner({book} : {book?: IsbnSearchBook}) {
             <p>Scanned ISBN: {result}</p>
             <input type="hidden" name="isbn" value={result} />
             {isSearching && <div className="flex flex-cols gap-2 justify-center"><LoopIcon /> <p>Searching...</p></div> }
+            {ref.current && ref.current.paused && <button onClick={() => ref.current?.play()}>Start scanning</button> }
         </>
     )
 }
