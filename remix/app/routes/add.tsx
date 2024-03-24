@@ -123,6 +123,12 @@ export async function action({request}: ActionFunctionArgs) {
     const title = s(formData, "title", { maxLength: 100});
     const author = s(formData, "author", { maxLength: 100});
     const presenter = s(formData, "presenter", { maxLength: 100});
+    const presentedAt = (() => { const x = s(formData, "presentedAt", {maxLength: 30});
+        if (!x) {
+            return null;
+        }
+        return new Date(x);
+    })();
     const description = s(formData, "description", { maxLength: 100} );
     const buylink = s(formData, "buylink", {maxLength: 1024});
     const genre = s(formData, "genre", {maxLength: 30});
@@ -137,6 +143,9 @@ export async function action({request}: ActionFunctionArgs) {
     }
     if (!presenter) {
         return json({field: 'error', error: "Presenter is required."} as const, {status: 400});
+    }
+    if (!presentedAt) {
+        return json({field: 'error', error: "Presentation date is required"} as const, {status: 400});
     }
     if (!description) {
         return json({field: 'error', error: "Description is required."} as const, {status: 400});
@@ -167,12 +176,13 @@ export async function action({request}: ActionFunctionArgs) {
         title: title,
         author: author,
         presenter: presenter,
+        presentationDay: presentedAt.toISOString(),
         description: description,
         genre: genre,
         buylink: buylink!,
         covers: String(coversData) as unknown as CoverImages,
         createdBy: "anonymous"
-    } satisfies Book);
+    } as const  satisfies Book);
 
     if (error) {
         console.error(`Error inserting book: ${error.message}`);
@@ -204,6 +214,12 @@ function BookInsertionForm() {
                 <Form.Field name="presenter">
                     <Form.Label>Presenter</Form.Label>
                     <Form.Control required className={inputFieldClassNames}/>
+                </Form.Field>
+                <Form.Field name="presentedAt">
+                    <Form.Label>Presentation Date</Form.Label>
+                    <Form.Control required asChild>
+                        <input type="date" className={inputFieldClassNames}/>
+                    </Form.Control>
                 </Form.Field>
                 <Form.Field name="description">
                     <Form.Label>Description</Form.Label>
