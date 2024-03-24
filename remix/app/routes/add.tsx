@@ -236,7 +236,7 @@ function BookInsertionForm() {
                 <Form.Field name="cover">
                     <Form.Label>Cover</Form.Label>
                     <Form.Control required asChild>
-                        <input type="file" className={inputFieldClassNames}/>
+                        <input type="file" accept="image/*" capture assName={inputFieldClassNames}/>
                     </Form.Control>
                 </Form.Field>
                 <Form.Field name="tags">
