@@ -8,7 +8,7 @@ import { createImagePreviews, getImagePath} from '~/.server/sharputils';
 import { getBookInfo, Book as IsbnSearchBook } from '~/.server/isbnutils';
 import { type Book } from "./_index";
 import { useEffect, useRef, useState } from "react";
-import { LoopIcon } from "@radix-ui/react-icons";
+import { LoopIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 
 export const meta: MetaFunction = () => {
     return [
@@ -279,12 +279,15 @@ function BookInsertionForm() {
     return (
         <div className="flex gap-2 flex-col w-[100%] items-center">
             <h1>Add a New Book</h1>
-            <Form.Root className="flex flex-col gap-2 w-[260px] outline p-3" method="post" encType="multipart/form-data">
+            <Form.Root className="flex flex-col gap-2 md:w-[260px]  outline p-3" method="post" encType="multipart/form-data">
             <input type="hidden" name="_action" value="ADDBOOK" />
+                <div className="flex flex-row gap-2 items-center">
                 <Form.Field name="title">
                     <Form.Label>Title</Form.Label>
-                    <Form.Control required className={inputFieldClassNames}/>
+                    <Form.Control required className={inputFieldClassNames + " flex-grow"}/>
                 </Form.Field>
+                <button type="button" onClick={() => console.log("Clicked")}><MagnifyingGlassIcon /></button>
+                </div>
                 <Form.Field name="author">
                     <Form.Label>Author</Form.Label>
                     <Form.Control required className={inputFieldClassNames}/>
@@ -296,7 +299,7 @@ function BookInsertionForm() {
                 <Form.Field name="presentedAt">
                     <Form.Label>Presentation Date</Form.Label>
                     <Form.Control required asChild>
-                        <input type="date" className={inputFieldClassNames}/>
+                        <input type="date" className={inputFieldClassNames + ' w-full'}/>
                     </Form.Control>
                 </Form.Field>
                 <Form.Field name="description">
