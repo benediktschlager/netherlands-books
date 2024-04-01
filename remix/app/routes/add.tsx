@@ -5,7 +5,7 @@ import {createClient} from "~/utils/supabase.server";
 import fs from 'fs/promises';
 import { useZxing} from "react-zxing";
 import { createImagePreviews, getImagePath} from '~/.server/sharputils';
-import { getBookInfo, Book as IsbnSearchBook } from '~/.server/isbnutils';
+import { getBookInfo, Book as IsbnSearchBook, searchBooks } from '~/.server/isbnutils';
 import { type Book } from "./_index";
 import { useEffect, useRef, useState } from "react";
 import { LoopIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
@@ -29,7 +29,7 @@ function IsbnScanner({book} : {book?: IsbnSearchBook}) {
     const [isSearching, setIsSearching] = useState(false);
     const fetcher = useFetcher();
 
-    const searchRef = useRef<IsbnSearchBook>(undefined);
+    const searchRef = useRef<IsbnSearchBook | undefined>(undefined);
     if (searchRef.current !== book) {
         console.log(`New book to search for: ${book?.isbn}`);
         searchRef.current = book;
@@ -189,6 +189,11 @@ export async function action({request}: ActionFunctionArgs) {
 
         return json({ field: 'book', book: bookInfo} as const);
     }
+    if (String(formData.get("_action")) === "SEARCHBOOKS") {
+        const title = String(formData.get('title'));
+        const searchResults = await searchBooks(title);
+        return json({field: 'books', books: searchResults} as const);
+    }
 
         return json({field: 'error', error: "Invalid request"} as const, {status: 400});
     }
@@ -253,6 +258,7 @@ export async function action({request}: ActionFunctionArgs) {
         title: title,
         author: author,
         presenter: presenter,
+        // @ts-expect-error JSON does not store Date objects only strings, prefer DTO/custom serializer in the future
         presentationDay: presentedAt.toISOString(),
         description: description,
         genre: genre,
@@ -271,6 +277,29 @@ export async function action({request}: ActionFunctionArgs) {
 }
 
 
+
+type BookSearchResultEntry = {
+    title: string,
+    author: string,
+    releaseYear: number,
+    isbn: string,
+};
+
+function BookSearchModal({books}: {books: BookSearchResultEntry[] } ) {
+    return (
+        <div className="flex flex-col gap-2">
+            <h2>Search Results</h2>
+            <ul>
+                {books.map((book, index) => (
+                    <li key={index}>
+                        <p>{book.title} by <i>{book.author}</i> ({book.releaseYear} </p>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
 function BookInsertionForm() {
     const actionData = useActionData<typeof action>();
 
@@ -281,12 +310,14 @@ function BookInsertionForm() {
             <h1>Add a New Book</h1>
             <Form.Root className="flex flex-col gap-2 md:w-[260px]  outline p-3" method="post" encType="multipart/form-data">
             <input type="hidden" name="_action" value="ADDBOOK" />
-                <div className="flex flex-row gap-2 items-center">
+                <div className="flex flex-row gap-2 items-center justify-center">
                 <Form.Field name="title">
                     <Form.Label>Title</Form.Label>
-                    <Form.Control required className={inputFieldClassNames + " flex-grow"}/>
+                    <Form.Control required asChild>
+                        <input type="text" className={inputFieldClassNames + ' flex-grow'} />
+                    </Form.Control>
                 </Form.Field>
-                <button type="button" onClick={() => console.log("Clicked")}><MagnifyingGlassIcon /></button>
+                    <button type="button" onClick={() => console.log("Clicked")}><MagnifyingGlassIcon /></button>
                 </div>
                 <Form.Field name="author">
                     <Form.Label>Author</Form.Label>
@@ -345,6 +376,7 @@ function BookInsertionForm() {
                     <p>Description: {actionData.description}</p>
                 </div>
             )}
+            <BookSearchModal books={actionData?.field === 'book' ? [actionData.book] : []} />
         </div>
     );
 }

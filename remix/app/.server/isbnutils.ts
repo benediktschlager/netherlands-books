@@ -1,3 +1,4 @@
+import App from "~/root";
 
 
 
@@ -65,5 +66,15 @@ export async function getBookInfo(isbn: string) {
 
     console.log(`fetched for ${isbn}: ${JSON.stringify(bookInfo)}`);
     return bookInfo;
+}
+
+
+export async function searchBooks(title: string) {
+    const response = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(title)}`);
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    const searchResults = await response.json() as Readonly<Book[]> | undefined;
+    return searchResults;
 }
 
