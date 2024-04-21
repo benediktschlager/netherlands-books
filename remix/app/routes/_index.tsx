@@ -1,7 +1,12 @@
-import {DownloadIcon, ExitIcon} from "@radix-ui/react-icons";
+import {
+    DownloadIcon,
+    ExitIcon,
+    PlusCircledIcon,
+    RocketIcon
+} from "@radix-ui/react-icons";
 import {Dialog} from "@radix-ui/themes";
 import {json, LoaderFunctionArgs, type MetaFunction} from "@remix-run/node";
-import {Link, useLoaderData} from "@remix-run/react";
+import {Link, useLoaderData, useNavigate} from "@remix-run/react";
 import React, {useContext, useState} from "react";
 import {createClient} from "~/utils/supabase.server";
 import { CoverImages } from "./add";
@@ -67,7 +72,7 @@ function Book({book, onClick}: { book: Book, onClick: () => void }) {
                 </picture>
                 </button>
             </div>
-            <div className="flex flex-col gap-2 flex-col p-2">
+            <div className="flex flex-col gap-2 p-2">
                 {book.buylink && <button onClick={download}><DownloadIcon/></button>}
             </div>
         </div>
@@ -101,17 +106,54 @@ export function BookDetails() {
     )
 }
 
-export function RecentBooks({books, onClick}: { books: Book[], onClick: (book: Book) => void }) {
+function Rockets({ spawnPosition: [x, y]}: { spawnPosition: [number, number] })
+{
     return (
-        <div className="grid p-3  grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {books.map((book) => (
-                    <Book key={book.id} book={book} onClick={() => onClick(book)}/>
-                )
-            )}
-        </div>
-
-
+        <>
+        <div className="absolute animate-spin z-0" style={{ top: y, left: x }}><RocketIcon /> </div>
+</>
     )
+
+}
+
+export function RecentBooks({books, onClick}: { books: Book[], onClick: (book: Book) => void }) {
+    const navigate = useNavigate();
+
+    const [addBtnPressAnimationActive, setAddBtnPressAnimateActive] = useState(false);
+    const [rocketSpawnPosition, setShowRockets] = useState<[number, number] | undefined>(undefined);
+
+
+    const shootRockets = (clientX: number, clientY: number) => {
+            setShowRockets([clientX, clientY]);
+            setTimeout(() => setShowRockets(undefined), 1000);
+    };
+
+
+    return (
+        <>
+            <div className="grid p-3  grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {books.map((book) => (
+                        <Book key={book.id} book={book} onClick={() => onClick(book)}/>
+                    )
+                )}
+            </div>
+            <div>
+                <button className={"absolute bottom-[128px] right-[128px] z-10 w-[96px] h-[96px] rounded-full bg-green-500" + (addBtnPressAnimationActive ? " animate-btn-pressed" : "")}
+                onClick={({ clientX, clientY}) => {
+                    setAddBtnPressAnimateActive(true);
+                    //navigate('/add');
+                   shootRockets(clientX, clientY);
+                }}
+                        onAnimationEnd={() => setAddBtnPressAnimateActive(false)}
+                >
+                    <PlusCircledIcon className="w-[100%] h-[100%]"/>
+                </button>
+                <div className="absolute bottom-[120px] right-[120px] z-3 w-[96px] h-[96px] rounded-full bg-green-700">
+                </div>
+            </div>
+            {rocketSpawnPosition ? <Rockets spawnPosition={rocketSpawnPosition} /> : null}
+        </>
+)
 }
 
 export default function Index() {

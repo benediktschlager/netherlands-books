@@ -20,6 +20,7 @@ export default function App() {
   return (
     <html lang="en">
       <head>
+        <title>Books</title>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <script src="https://www.google.com/recaptcha/enterprise.js?render=6Lda05MpAAAAACIqI_Oz46WvRl6JWvKHLFmTQcRi"></script>
@@ -27,9 +28,9 @@ export default function App() {
         <Links />
       </head>
       <body>
-				<Theme accentColor="crimson" grayColor="sand" radius="large" scaling="95%">
-        <Outlet />
-				</Theme>
+        <Theme accentColor="crimson" grayColor="sand" radius="large" scaling="95%">
+          <Outlet />
+        </Theme>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
